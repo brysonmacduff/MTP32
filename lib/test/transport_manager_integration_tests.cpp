@@ -38,7 +38,7 @@ struct Endpoint
     Endpoint(
         Role endpoint_role,
         TransportManager::TxCallback transmit_callback,
-        TransportManager::RxCallback receive_callback
+        TransportManager::PollRxCallback receive_callback
     )
         : role(endpoint_role)
         , transport_manager(

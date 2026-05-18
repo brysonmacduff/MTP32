@@ -25,7 +25,11 @@ enum class Role
 
 /**
  * @brief This class represents an implementation of the micro-transport protocol for 32 byte messages. 
- * @warning This class does not take ownership of the communication endpoint, such as a file descriptor, for sending and receiving packets.
+ * @note This class behaves like a classic finite-state-machine. 
+ * - The FSM makes progress through consecutive calls of TransportManager::Run.
+ * - The FSM should never be blocked by either the TX or RX callback logic. Everything should be non-blocking.
+ * @warning This class does not take ownership of the communication endpoint, such as a file descriptor, for sending and receiving packets. Both TX and RX logic is
+ *  configurable via callback injections.
  * @warning This class is not thread-safe. Take caution with how callback functions are defined.
  */
 class TransportManager 
@@ -34,7 +38,7 @@ public:
 
     static constexpr std::chrono::milliseconds RX_TIMEOUT {100};
 
-    using RxCallback = std::function<std::optional<Packet>()>;
+    using PollRxCallback = std::function<std::optional<Packet>()>;
     using TxCallback = std::function<void(Packet)>;
     using ReceivedPacketCallback = std::function<void(Packet)>;
     using ErrorCallback = std::function<void(Packet, Error)>;
@@ -42,15 +46,16 @@ public:
     /**
      * @param role : Impacts behaviour affecting deadlock avoidance and communication order. For example, the "master" role takes responsibility for preventing RX deadlock.
      * @param tx_callback : TransportManager activates this callback to send a packet.
-     * @param rx_callback : TransportManager activates this callback when it wants to read a packet.
-     * @param received_packet_callback : This is activated to publish a packet received by activation of the rx_callback.
-     * @warning It is assumed that the TX and RX callbacks are non-blocking. The RX callback is expected to be called periodically when TransportManager::Run is called, provided
-     * TransportManager is in the receive state.
+     * @param poll_rx_callback : TransportManager activates this callback when it wants to read a packet.
+     * @param received_packet_callback : This is activated to publish a packet received by activation of the poll_rx_callback.
+     * @warning It is assumed that the TX and RX callbacks are non-blocking. The RX callback is expected to be called periodically such as when TransportManager::Run is 
+     * called, assuming that TransportManager is in the receive state.
      */
     TransportManager(Role role, 
         TxCallback tx_callback, 
-        RxCallback rx_callback,
-        ReceivedPacketCallback received_packet_callback
+        PollRxCallback poll_rx_callback,
+        ReceivedPacketCallback received_packet_callback,
+        std::chrono::milliseconds rx_timeout = RX_TIMEOUT
     );
 
     /**
@@ -79,10 +84,12 @@ private:
         , RECEIVE
     };
 
-    RxCallback m_rx_callback = [](){ return std::nullopt; };
-    TxCallback m_tx_callback = [](Packet tx_packet){ (void)tx_packet; };
+    PollRxCallback m_poll_rx_callback;
+    TxCallback m_tx_callback;
+    ReceivedPacketCallback m_received_packet_callback;
+    std::chrono::milliseconds m_rx_timeout;
+
     ErrorCallback m_error_callback = [](Packet failed_tx_packet, Error error){ (void)failed_tx_packet; (void)error; };
-    ReceivedPacketCallback m_received_packet_callback = [](Packet received_packet){ (void)received_packet; };
 
     Role m_role;
     State m_state;

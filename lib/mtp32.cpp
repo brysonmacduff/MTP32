@@ -2,11 +2,12 @@
 
 namespace MTP32 
 {
-TransportManager::TransportManager(Role role, TxCallback tx_callback, RxCallback rx_callback, ReceivedPacketCallback received_packet_callback)
+TransportManager::TransportManager(Role role, TxCallback tx_callback, PollRxCallback poll_rx_callback, ReceivedPacketCallback received_packet_callback, std::chrono::milliseconds rx_timeout)
 : m_role(role)
 , m_tx_callback(tx_callback)
-, m_rx_callback(rx_callback)
+, m_poll_rx_callback(poll_rx_callback)
 , m_received_packet_callback(received_packet_callback)
+, m_rx_timeout(rx_timeout)
 {
     InitializeState();
 }
@@ -95,7 +96,7 @@ void TransportManager::Receive()
     }
 
     // Attempt to read packet from the endpoint
-    auto rx_packet_opt = m_rx_callback();
+    auto rx_packet_opt = m_poll_rx_callback();
 
     if(rx_packet_opt.has_value())
     {   
@@ -132,7 +133,7 @@ void TransportManager::SendMessagePacket()
 
 void TransportManager::SetRxTimeoutTimepoint()
 {
-    m_rx_timeout_timepoint = m_current_time + RX_TIMEOUT;
+    m_rx_timeout_timepoint = m_current_time + m_rx_timeout;
 }
 
 bool TransportManager::HasRxTimeoutOccured()
