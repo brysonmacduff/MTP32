@@ -1,0 +1,40 @@
+@startuml
+title MTP32 State Machine
+
+state ROLE_DECISION <<choice>>
+state RECEIVE_TIMEOUT_DECISION <<choice>>
+[*] --> ROLE_DECISION : Is master?
+
+ROLE_DECISION --> TRANSMIT : Yes
+ROLE_DECISION --> RECEIVE : No
+
+state TRANSMIT {
+    state HAS_PAYLOAD_DECISION <<choice>>
+    state SEND_MESSAGE {
+        SEND_MESSAGE: enter / SendMessagePacket();
+    }
+    state SEND_NOP {
+        SEND_NOP : enter / SendNopPacket();
+    }
+
+    [*] --> HAS_PAYLOAD_DECISION : Has message pending?
+    HAS_PAYLOAD_DECISION --> SEND_MESSAGE : Yes
+    HAS_PAYLOAD_DECISION --> SEND_NOP : No
+}
+
+state RECEIVE {
+    RECEIVE : enter / StartTimer(); StartListening();
+    RECEIVE : exit / StopTimer(); StopListening();
+}
+
+state RECEIVE_TIMEOUT_CHECKPOINT <<choice>>
+
+[*] --> TRANSMIT
+TRANSMIT --> RECEIVE : Packet sent
+RECEIVE --> RECEIVE_TIMEOUT_CHECKPOINT : Timeout
+RECEIVE --> TRANSMIT : Packet received
+RECEIVE_TIMEOUT_CHECKPOINT --> RECEIVE_TIMEOUT_DECISION : Is master?
+RECEIVE_TIMEOUT_DECISION --> RECEIVE : No
+RECEIVE_TIMEOUT_DECISION --> TRANSMIT : Yes
+
+@enduml
