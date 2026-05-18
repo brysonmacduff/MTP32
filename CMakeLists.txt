@@ -19,4 +19,3 @@ find_package(GTest REQUIRED)
 
 # Add library subdirectory
 add_subdirectory(lib)
-add_subdirectory(src)
