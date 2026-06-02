@@ -59,7 +59,7 @@ struct Endpoint
 // ============================================================================
 TEST(TransportManagerIntegrationTests, MasterSendsMessageToSlave)
 {
-    using Clock = std::chrono::system_clock;
+    using Clock = std::chrono::steady_clock;
     auto simulated_time = Clock::now();
 
     // These FIFOs represent the RF link between master and slave.
@@ -128,7 +128,7 @@ TEST(TransportManagerIntegrationTests, MasterSendsMessageToSlave)
 
 TEST(TransportManagerIntegrationTests, SlaveRepliesToMasterMessage)
 {
-    using Clock = std::chrono::system_clock;
+    using Clock = std::chrono::steady_clock;
     auto simulated_time = Clock::now();
 
     std::deque<Packet> master_inbound_fifo;
@@ -211,7 +211,7 @@ TEST(TransportManagerIntegrationTests, SlaveRepliesToMasterMessage)
 
 TEST(TransportManagerIntegrationTests, MasterSendsNopWhenNoMessagesAreQueued)
 {
-    using Clock = std::chrono::system_clock;
+    using Clock = std::chrono::steady_clock;
     auto simulated_time = Clock::now();
 
     std::deque<Packet> master_inbound_fifo;
@@ -271,7 +271,7 @@ TEST(TransportManagerIntegrationTests, MasterSendsNopWhenNoMessagesAreQueued)
 
 TEST(TransportManagerIntegrationTests, MasterAvoidsDeadlockUsingRxTimeout)
 {
-    using Clock = std::chrono::system_clock;
+    using Clock = std::chrono::steady_clock;
     auto simulated_time = Clock::now();
 
     std::deque<Packet> master_inbound_fifo;

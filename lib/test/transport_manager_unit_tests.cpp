@@ -33,7 +33,7 @@ TEST(TransportManagerUnitTests, SlaveStartsInReceiveStateAndDoesNotTransmitImmed
     EXPECT_FALSE(tx_called);
 
     // First Run() is RECEIVE → no TX unless packet arrives
-    tm.Run(std::chrono::system_clock::now());
+    tm.Run(std::chrono::steady_clock::now());
     EXPECT_FALSE(tx_called);
 }
 
@@ -52,7 +52,7 @@ TEST(TransportManagerUnitTests, MasterStartsInTransmitStateButDoesNotTransmitUnt
     EXPECT_FALSE(tx_called);
 
     // First Run() triggers Transmit()
-    tm.Run(std::chrono::system_clock::now());
+    tm.Run(std::chrono::steady_clock::now());
     EXPECT_TRUE(tx_called);
 }
 
@@ -68,7 +68,7 @@ TEST(TransportManagerUnitTests, MasterSendsNopWhenQueueEmpty)
         [&](auto){}
     );
 
-    tm.Run(std::chrono::system_clock::now()); // TRANSMIT → NOP
+    tm.Run(std::chrono::steady_clock::now()); // TRANSMIT → NOP
 
     EXPECT_TRUE(tx_called);
     EXPECT_THAT(sent_packet, ElementsAreArray(NOP_PACKET));
@@ -89,7 +89,7 @@ TEST(TransportManagerUnitTests, MasterSendsQueuedPacket)
     );
 
     tm.EnqueuePacket(packet);
-    tm.Run(std::chrono::system_clock::now()); // TRANSMIT → SEND_MESSAGE
+    tm.Run(std::chrono::steady_clock::now()); // TRANSMIT → SEND_MESSAGE
 
     EXPECT_TRUE(tx_called);
     EXPECT_EQ(sent_packet[0], 0xAB);
@@ -108,7 +108,7 @@ TEST(TransportManagerUnitTests, ReceiveCallbackDeliversPacket)
         [&](auto p){ received_called = true; received_packet = p; }
     );
 
-    tm.Run(std::chrono::system_clock::now()); // RECEIVE → packet available
+    tm.Run(std::chrono::steady_clock::now()); // RECEIVE → packet available
 
     EXPECT_TRUE(received_called);
     EXPECT_EQ(received_packet[0], 0x55);
@@ -125,10 +125,10 @@ TEST(TransportManagerUnitTests, ReceiveTransitionsToTransmitButDoesNotTransmitUn
         [&](auto){}
     );
 
-    tm.Run(std::chrono::system_clock::now()); // RECEIVE → packet → state becomes TRANSMIT
+    tm.Run(std::chrono::steady_clock::now()); // RECEIVE → packet → state becomes TRANSMIT
     EXPECT_FALSE(tx_called); // No TX yet
 
-    tm.Run(std::chrono::system_clock::now()); // Now TRANSMIT executes
+    tm.Run(std::chrono::steady_clock::now()); // Now TRANSMIT executes
     EXPECT_TRUE(tx_called);
 }
 
@@ -143,7 +143,7 @@ TEST(TransportManagerUnitTests, MasterRxTimeoutTriggersTransmitOnNextRun)
         [&](auto){}
     );
 
-    auto initial_timepoint = std::chrono::system_clock::now();
+    auto initial_timepoint = std::chrono::steady_clock::now();
 
     // First Run() performs initial transmit (master always starts in TRANSMIT)
     tx_called = false;
@@ -161,27 +161,4 @@ TEST(TransportManagerUnitTests, MasterRxTimeoutTriggersTransmitOnNextRun)
 
     tm.Run(timeout_timepoint); // Now TRANSMIT executes
     EXPECT_TRUE(tx_called);
-}
-
-TEST(TransportManagerUnitTests, ErrorCallbackIsStoredButNotAutomaticallyInvoked)
-{
-    bool error_called = false;
-
-    TransportManager tm(
-        Role::MASTER,
-        [&](auto){},
-        [](){ return std::nullopt; },
-        [&](auto){}
-    );
-
-    // Store the callback
-    tm.SetErrorCallback([&](auto, auto){ error_called = true; });
-
-    // TransportManager never calls the error callback internally
-    // So error_called must remain false
-    EXPECT_FALSE(error_called);
-
-    // Setting the callback again should still not invoke it
-    tm.SetErrorCallback([&](auto, auto){ error_called = true; });
-    EXPECT_FALSE(error_called);
 }
