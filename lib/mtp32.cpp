@@ -12,17 +12,12 @@ TransportManager::TransportManager(Role role, TxCallback tx_callback, PollRxCall
     InitializeState();
 }
 
-void TransportManager::SetErrorCallback(ErrorCallback error_callback)
-{
-    m_error_callback = error_callback;
-}
-
 void TransportManager::EnqueuePacket(const Packet& packet_bytes)
 {
     m_tx_queue.push_back(packet_bytes);
 }
 
-void TransportManager::Run(std::chrono::time_point<std::chrono::system_clock> current_time)
+void TransportManager::Run(std::chrono::time_point<std::chrono::steady_clock> current_time)
 {
     SetCurrentTime(current_time);
 
@@ -103,6 +98,8 @@ void TransportManager::Receive()
         // Report the received packet to the callback listener
         m_received_packet_callback(rx_packet_opt.value());
 
+        SetLastRxTime(std::chrono::steady_clock::now());
+
         // Transition to the transmit state after a packet is received.
         ChangeState(State::TRANSMIT);
     }
@@ -141,9 +138,14 @@ bool TransportManager::HasRxTimeoutOccured()
     return m_current_time >= m_rx_timeout_timepoint;
 }
 
-void TransportManager::SetCurrentTime(const std::chrono::time_point<std::chrono::system_clock>& current_time)
+void TransportManager::SetCurrentTime(const std::chrono::time_point<std::chrono::steady_clock>& current_time)
 {
     m_current_time = current_time;
+}
+
+void TransportManager::SetLastRxTime(const std::chrono::time_point<std::chrono::steady_clock>& current_time)
+{
+    m_last_rx_timepoint = current_time;
 }
 
 } // namespace MTP32

@@ -12,11 +12,6 @@ static inline constexpr uint8_t MAXIMUM_PACKET_SIZE = 32;
 using Packet = std::array<uint8_t, MAXIMUM_PACKET_SIZE>;
 static inline constexpr Packet NOP_PACKET = { 0 };
 
-enum class Error
-{
-    RX_TIMEOUT
-};
-
 enum class Role 
 {
     MASTER,
@@ -41,7 +36,6 @@ public:
     using PollRxCallback = std::function<std::optional<Packet>()>;
     using TxCallback = std::function<void(Packet)>;
     using ReceivedPacketCallback = std::function<void(Packet)>;
-    using ErrorCallback = std::function<void(Packet, Error)>;
 
     /**
      * @param role : Impacts behaviour affecting deadlock avoidance and communication order. For example, the "master" role takes responsibility for preventing RX deadlock.
@@ -59,11 +53,6 @@ public:
     );
 
     /**
-     * @brief Set a callback that is activated when an error occurs.
-     */
-    void SetErrorCallback(ErrorCallback error_callback);
-
-    /**
      * @brief Enqueues a packet for transmission at the next opportunity.
      * @returns The result of whether the packet was enqueued.
      */
@@ -74,7 +63,17 @@ public:
      * It is recommended that this function be called every 50 milliseconds at the latest because it is twice the frequency of the RX timeout interval (100 milliseconds).
      * @param current_time : This argument tells the state machine how much time has passed between calls of this function.
      */
-    void Run(std::chrono::time_point<std::chrono::system_clock> current_time);
+    void Run(std::chrono::time_point<std::chrono::steady_clock> current_time);
+
+    /**
+     * @brief Provides the number of TX messages that are in the outbound queue waiting to be transmitted.
+     */
+    size_t GetPendingTxMessageCount() const { return m_tx_queue.size(); }
+
+    /**
+     * @brief Reports the time at which the last packet was received. This is useful for gauging the radio connection quality.
+     */
+    std::chrono::time_point<std::chrono::steady_clock> GetLastRxTimepoint() const { return m_last_rx_timepoint; }
 
 private:
 
@@ -89,14 +88,13 @@ private:
     ReceivedPacketCallback m_received_packet_callback;
     std::chrono::milliseconds m_rx_timeout;
 
-    ErrorCallback m_error_callback = [](Packet failed_tx_packet, Error error){ (void)failed_tx_packet; (void)error; };
-
     Role m_role;
     State m_state;
     std::list<Packet> m_tx_queue;
 
-    std::chrono::time_point<std::chrono::system_clock> m_rx_timeout_timepoint { std::chrono::system_clock::now() };
-    std::chrono::time_point<std::chrono::system_clock> m_current_time { std::chrono::system_clock::now() };
+    std::chrono::time_point<std::chrono::steady_clock> m_rx_timeout_timepoint { std::chrono::steady_clock::now() };
+    std::chrono::time_point<std::chrono::steady_clock> m_current_time { std::chrono::steady_clock::now() };
+    std::chrono::time_point<std::chrono::steady_clock> m_last_rx_timepoint { std::chrono::steady_clock::now() };
 
     void InitializeState();
     void ChangeState(State state);
@@ -108,7 +106,8 @@ private:
     void SendMessagePacket();
     void SetRxTimeoutTimepoint();
     bool HasRxTimeoutOccured();
-    void SetCurrentTime(const std::chrono::time_point<std::chrono::system_clock>& current_time);
+    void SetCurrentTime(const std::chrono::time_point<std::chrono::steady_clock>& current_time);
+    void SetLastRxTime(const std::chrono::time_point<std::chrono::steady_clock>& current_time);
 };
 
 } // namespace MTP32
