@@ -41,6 +41,7 @@ install(
     FILES_MATCHING
         PATTERN "*.h"
         PATTERN "test" EXCLUDE
+        PATTERN "platforms" EXCLUDE
 )
 
 # ----------------------------------------
