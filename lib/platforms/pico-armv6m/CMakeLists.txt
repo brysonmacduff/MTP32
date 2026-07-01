@@ -53,7 +53,7 @@ install(FILES ${MTP32_HEADERS}
 # Generate CMake package config
 # ------------------------------------------------------------
 configure_package_config_file(
-    ../../cmake/mtp32Config.cmake.in
+    ${PROJECT_SOURCE_DIR}/cmake/mtp32Config.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/mtp32Config.cmake
     INSTALL_DESTINATION ${MTP32_INSTALL_CMAKEDIR}
 )
