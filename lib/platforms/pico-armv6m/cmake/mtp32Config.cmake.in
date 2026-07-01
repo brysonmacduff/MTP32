@@ -1,0 +1,16 @@
+@PACKAGE_INIT@
+
+# ------------------------------------------------------------
+# Architecture metadata (useful for consumers)
+# ------------------------------------------------------------
+set(mtp32_PLATFORM "pico-armv6m")
+
+# ------------------------------------------------------------
+# Import the targets file generated during installation
+# ------------------------------------------------------------
+include("${CMAKE_CURRENT_LIST_DIR}/mtp32Targets.cmake")
+
+# ------------------------------------------------------------
+# Provide include directory variable for consumers
+# ------------------------------------------------------------
+set(mtp32_INCLUDE_DIRS "${PACKAGE_PREFIX_DIR}/include")
