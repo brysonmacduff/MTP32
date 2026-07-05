@@ -162,3 +162,20 @@ TEST(TransportManagerUnitTests, MasterRxTimeoutTriggersTransmitOnNextRun)
     tm.Run(timeout_timepoint); // Now TRANSMIT executes
     EXPECT_TRUE(tx_called);
 }
+
+TEST(TransportManagerUnitTests, RejectTxPacketWhenBufferIsFull)
+{
+    TransportManager tm(
+        Role::MASTER,
+        [&](auto){},
+        [](){ return std::nullopt; },
+        [&](auto){}
+    );
+
+    for(int count = 0; count < TransportManager::MAXIMUM_TX_BUFFER_SIZE; ++count)
+    {
+        EXPECT_TRUE(tm.EnqueuePacket({}));
+    }
+
+    ASSERT_FALSE(tm.EnqueuePacket({}));
+}
