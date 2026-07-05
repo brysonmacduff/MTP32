@@ -172,7 +172,7 @@ TEST(TransportManagerUnitTests, RejectTxPacketWhenBufferIsFull)
         [&](auto){}
     );
 
-    for(int count = 0; count < TransportManager::MAXIMUM_TX_BUFFER_SIZE; ++count)
+    for(int count = 0; count < TransportManager::DEFAULT_TX_BUFFER_SIZE; ++count)
     {
         EXPECT_TRUE(tm.EnqueuePacket({}));
     }
