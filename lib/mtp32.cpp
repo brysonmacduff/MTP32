@@ -2,14 +2,13 @@
 
 namespace MTP32 
 {
-TransportManager::TransportManager(Role role, TxCallback tx_callback, PollRxCallback poll_rx_callback, ReceivedPacketCallback received_packet_callback, std::chrono::milliseconds rx_timeout, size_t tx_buffer_size)
+TransportManager::TransportManager(Role role, TxCallback tx_callback, PollRxCallback poll_rx_callback, ReceivedPacketCallback received_packet_callback, std::chrono::milliseconds rx_timeout)
 : m_role(role)
 , m_tx_callback(tx_callback)
 , m_poll_rx_callback(poll_rx_callback)
 , m_received_packet_callback(received_packet_callback)
 , m_rx_timeout(rx_timeout)
 {
-    m_tx_queue.reserve(tx_buffer_size);
     InitializeState();
 }
 
@@ -150,13 +149,13 @@ void TransportManager::SetLastRxTime(const std::chrono::time_point<std::chrono::
 
 bool TransportManager::Enqueue(const Packet &packet)
 {
-    if(m_tx_queue_count == m_tx_queue.capacity())
+    if(m_tx_queue_count == DEFAULT_TX_BUFFER_SIZE)
     {
         return false;
     }
 
     m_tx_queue[m_tx_queue_tail] = packet;
-    m_tx_queue_tail = (m_tx_queue_tail + 1) % m_tx_queue.capacity();
+    m_tx_queue_tail = (m_tx_queue_tail + 1) % DEFAULT_TX_BUFFER_SIZE;
     ++m_tx_queue_count;
 
     return true;
@@ -165,7 +164,7 @@ bool TransportManager::Enqueue(const Packet &packet)
 Packet& TransportManager::Dequeue()
 {
     Packet& packet = m_tx_queue[m_tx_queue_head];
-    m_tx_queue_head = (m_tx_queue_head + 1) % m_tx_queue.capacity();
+    m_tx_queue_head = (m_tx_queue_head + 1) % DEFAULT_TX_BUFFER_SIZE;
     --m_tx_queue_count;
     return packet;
 }

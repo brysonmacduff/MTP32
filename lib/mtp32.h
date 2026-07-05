@@ -1,7 +1,6 @@
 #pragma once
 #include <functional>
 #include <array>
-#include <vector>
 #include <chrono>
 #include <optional>
 
@@ -32,7 +31,7 @@ class TransportManager
 public:
 
     static constexpr std::chrono::milliseconds RX_TIMEOUT {100};
-    static constexpr size_t DEFAULT_TX_BUFFER_SIZE = 128;
+    static constexpr size_t DEFAULT_TX_BUFFER_SIZE = 64;
 
     using PollRxCallback = std::function<std::optional<Packet>()>;
     using TxCallback = std::function<void(Packet)>;
@@ -50,8 +49,7 @@ public:
         TxCallback tx_callback, 
         PollRxCallback poll_rx_callback,
         ReceivedPacketCallback received_packet_callback,
-        std::chrono::milliseconds rx_timeout = RX_TIMEOUT,
-        size_t tx_buffer_size = DEFAULT_TX_BUFFER_SIZE
+        std::chrono::milliseconds rx_timeout = RX_TIMEOUT
     );
 
     /**
@@ -92,7 +90,7 @@ private:
 
     Role m_role;
     State m_state;
-    std::vector<Packet> m_tx_queue;
+    std::array<Packet, DEFAULT_TX_BUFFER_SIZE> m_tx_queue;
     size_t m_tx_queue_head { 0 };
     size_t m_tx_queue_tail { 0 };
     size_t m_tx_queue_count { 0 };
