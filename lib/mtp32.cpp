@@ -12,9 +12,9 @@ TransportManager::TransportManager(Role role, TxCallback tx_callback, PollRxCall
     InitializeState();
 }
 
-void TransportManager::EnqueuePacket(const Packet& packet_bytes)
+bool TransportManager::EnqueuePacket(const Packet& packet_bytes)
 {
-    m_tx_queue.push_back(packet_bytes);
+    return Enqueue(packet_bytes);
 }
 
 void TransportManager::Run(std::chrono::time_point<std::chrono::steady_clock> current_time)
@@ -107,7 +107,7 @@ void TransportManager::Receive()
 
 bool TransportManager::HasPendingOutboundPacket()
 {
-    return not m_tx_queue.empty();
+    return m_tx_queue_count > 0;
 }
 
 void TransportManager::SendNopPacket()
@@ -122,8 +122,7 @@ void TransportManager::SendMessagePacket()
         return;
     }
 
-    auto tx_packet = m_tx_queue.front();
-    m_tx_queue.pop_front();
+    auto tx_packet = Dequeue();
 
     m_tx_callback(tx_packet);
 }
@@ -146,6 +145,28 @@ void TransportManager::SetCurrentTime(const std::chrono::time_point<std::chrono:
 void TransportManager::SetLastRxTime(const std::chrono::time_point<std::chrono::steady_clock>& current_time)
 {
     m_last_rx_timepoint = current_time;
+}
+
+bool TransportManager::Enqueue(const Packet &packet)
+{
+    if(m_tx_queue_count == MAXIMUM_TX_BUFFER_SIZE)
+    {
+        return false;
+    }
+
+    m_tx_queue[m_tx_queue_tail] = packet;
+    m_tx_queue_tail = (m_tx_queue_tail + 1) % MAXIMUM_TX_BUFFER_SIZE;
+    ++m_tx_queue_count;
+
+    return true;
+}
+
+Packet& TransportManager::Dequeue()
+{
+    Packet& packet = m_tx_queue[m_tx_queue_head];
+    m_tx_queue_head = (m_tx_queue_head + 1) % MAXIMUM_TX_BUFFER_SIZE;
+    --m_tx_queue_count;
+    return packet;
 }
 
 } // namespace MTP32

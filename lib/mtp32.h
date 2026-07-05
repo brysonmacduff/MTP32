@@ -32,6 +32,7 @@ class TransportManager
 public:
 
     static constexpr std::chrono::milliseconds RX_TIMEOUT {100};
+    static constexpr size_t MAXIMUM_TX_BUFFER_SIZE = 1024;
 
     using PollRxCallback = std::function<std::optional<Packet>()>;
     using TxCallback = std::function<void(Packet)>;
@@ -54,9 +55,9 @@ public:
 
     /**
      * @brief Enqueues a packet for transmission at the next opportunity.
-     * @returns The result of whether the packet was enqueued.
+     * @returns The result of whether the packet was enqueued. A packet can be rejected for if there is not enough buffer capacity.
      */
-    void EnqueuePacket(const Packet& packet_bytes);
+    bool EnqueuePacket(const Packet& packet_bytes);
 
     /**
      * @brief Runs the primary worker task that is responsible for managing TX and RX responsibilities. This function must be called periodically to advance the state machine.
@@ -68,7 +69,7 @@ public:
     /**
      * @brief Provides the number of TX messages that are in the outbound queue waiting to be transmitted.
      */
-    size_t GetPendingTxMessageCount() const { return m_tx_queue.size(); }
+    size_t GetPendingTxMessageCount() const { return m_tx_queue_count; }
 
     /**
      * @brief Reports the time at which the last packet was received. This is useful for gauging the radio connection quality.
@@ -90,7 +91,10 @@ private:
 
     Role m_role;
     State m_state;
-    std::list<Packet> m_tx_queue;
+    std::array<Packet, MAXIMUM_TX_BUFFER_SIZE> m_tx_queue;
+    size_t m_tx_queue_head { 0 };
+    size_t m_tx_queue_tail { 0 };
+    size_t m_tx_queue_count { 0 };
 
     std::chrono::time_point<std::chrono::steady_clock> m_rx_timeout_timepoint { std::chrono::steady_clock::now() };
     std::chrono::time_point<std::chrono::steady_clock> m_current_time { std::chrono::steady_clock::now() };
@@ -108,6 +112,9 @@ private:
     bool HasRxTimeoutOccured();
     void SetCurrentTime(const std::chrono::time_point<std::chrono::steady_clock>& current_time);
     void SetLastRxTime(const std::chrono::time_point<std::chrono::steady_clock>& current_time);
+
+    bool Enqueue(const Packet& packet);
+    Packet& Dequeue();
 };
 
 } // namespace MTP32
