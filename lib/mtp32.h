@@ -95,9 +95,9 @@ private:
     size_t m_tx_queue_tail { 0 };
     size_t m_tx_queue_count { 0 };
 
-    std::chrono::time_point<std::chrono::steady_clock> m_rx_timeout_timepoint { std::chrono::steady_clock::now() };
-    std::chrono::time_point<std::chrono::steady_clock> m_current_time { std::chrono::steady_clock::now() };
-    std::chrono::time_point<std::chrono::steady_clock> m_last_rx_timepoint { std::chrono::steady_clock::now() };
+    std::chrono::time_point<std::chrono::steady_clock> m_rx_timeout_timepoint { std::chrono::seconds{0} };
+    std::chrono::time_point<std::chrono::steady_clock> m_current_time { std::chrono::seconds{0} };
+    std::chrono::time_point<std::chrono::steady_clock> m_last_rx_timepoint { std::chrono::seconds{0} };
 
     void InitializeState();
     void ChangeState(State state);
