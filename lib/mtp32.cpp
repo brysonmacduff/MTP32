@@ -98,7 +98,7 @@ void TransportManager::Receive()
         // Report the received packet to the callback listener
         m_received_packet_callback(rx_packet_opt.value());
 
-        SetLastRxTime(std::chrono::steady_clock::now());
+        SetLastRxTime(m_current_time);
 
         // Transition to the transmit state after a packet is received.
         ChangeState(State::TRANSMIT);
